@@ -4,6 +4,7 @@ import logging
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
+import pydicom
 
 #
 # DICOM_Modify
@@ -112,6 +113,12 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
 
+    # Force input selector to use the Open (rather than the "Save" dialog) and be restricted to files (not directories)
+    self.ui.InputDICOMPathLineEdit.filters = ctk.ctkPathLineEdit.Readable + ctk.ctkPathLineEdit.Files
+
+    # Force output directory selector to only allow directories as values (hide files, allow directories only)
+    self.ui.OutputDICOMPathLineEdit.filters = ctk.ctkPathLineEdit.Dirs
+    
     # Set scene in MRML widgets. Make sure that in Qt designer the top-level qMRMLWidget's
     # "mrmlSceneChanged(vtkMRMLScene*)" signal in is connected to each MRML widget's.
     # "setMRMLScene(vtkMRMLScene*)" slot.
@@ -135,11 +142,134 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.invertOutputCheckBox.connect("toggled(bool)", self.updateParameterNodeFromGUI)
     self.ui.invertedOutputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
+    self.ui.ModifyAllPushButton.clicked.connect(self.onModifyAllPushButtonClick)
+    self.ui.ModifySinglePushButton.clicked.connect(self.onModifySinglePushButtonClick)
+    self.ui.OverwriteRadioButton.toggled.connect(self.onOverwriteRadioButtonClick)
+    self.ui.OutputDirRadioButton.toggled.connect(self.onOutputDirRadioButtonClick)
+    
+
     # Buttons
     self.ui.applyButton.connect('clicked(bool)', self.onApplyButton)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
+
+  def onModifyAllPushButtonClick(self):
+    '''Triggers modifying all DICOM files in the directory of the selected input DICOM file'''
+    logging.debug('Launching DICOM_Modify modify all...')
+    # Get selected file path
+    selectedFile = self.ui.InputDICOMPathLineEdit.currentPath
+    logging.debug('Selected file: %s' % (selectedFile))
+    # Validate that it is a DICOM file
+    if not self.logic.isValidDICOMFile(selectedFile):
+      slicer.util.warningDisplay('The selected input file is not a valid DICOM file!  Canceling...')
+      logging.debug('Canceled modify all because selected file was not a valid DICOM file.')
+      return
+    # Gather all the files in that directory
+    basePath, fileName = os.path.split(selectedFile)
+    (_,_, files_to_modify) = next(os.walk(basePath))
+    filePathsToModify = [os.path.join(basePath, fileName) for fileName in files_to_modify]
+    logging.debug('Gathered %i files to modify.' % (len(filePathsToModify)))
+    # Deterimine the output directory (i.e. same for overwrite, or specified other directory)
+    outputDirectory = self.getOutputDirectory()
+    if outputDirectory=='':
+      slicer.util.warningDisplay('The selected output directory is empty! Canceling...')
+      return
+    # Assemble output paths
+    outputFilePaths = [os.path.join(outputDirectory, fileName) for fileName in files_to_modify]
+    # Gather Tags to modify
+    tagNumDict = self.gatherTagNumDict()
+    tagNameDict = self.gatherTagNameDict()
+    # TODO: Validate these tags before actually running any modification?
+    # Run the modification
+    for inputFilePath, outputFilePath in zip(filePathsToModify, outputFilePaths):
+      successFlag, err = self.logic.modifyDicomFile(inputFilePath, outputFilePath, tagNameDict, tagNumDict)
+      if not successFlag:
+        logging.warning('DICOM file modification failed for %s'%inputFilePath)
+        logging.warning('Error message: %s' % (str(err)))
+
+  def onModifySinglePushButtonClick(self):
+    '''Triggers modification of the single selected DICOM file'''
+    logging.debug('Launching DICOM_Modify single file...')
+    # Get selected file path
+    selectedFile = self.ui.InputDICOMPathLineEdit.currentPath
+    logging.debug('Selected file: %s' % (selectedFile))
+    # Validate that it is a DICOM file
+    if not self.logic.isValidDICOMFile(selectedFile):
+      slicer.util.warningDisplay('The selected input file is not a valid DICOM file!  Canceling...')
+      logging.debug('Canceled modify all because selected file was not a valid DICOM file.')
+      return
+    # Deterimine the output directory (i.e. same for overwrite, or specified other directory)
+    outputDirectory = self.getOutputDirectory()
+    if outputDirectory=='':
+      slicer.util.warningDisplay('The selected output directory is empty! Canceling...')
+      return
+    _, selectedFileName = os.path.split(selectedFile)
+    outputFilePath = os.path.join(outputDirectory, selectedFileName)
+    # Gather Tags to modify
+    tagNumDict = self.gatherTagNumDict()
+    tagNameDict = self.gatherTagNameDict()
+    # TODO: Validate these tags before actually running any modification?
+    # Run the modification
+    successFlag, err = self.logic.modifyDicomFile(selectedFile, outputFilePath, tagNameDict, tagNumDict)
+    if not successFlag:
+      logging.warning('DICOM file modification failed for %s'%selectedFile)
+      logging.warning('Error message: %s' % (str(err)))
+      raise err # may as well raise it, this was the only file we were trying for
+
+  def getOutputDirectory(self):
+    '''Determine output directory based on radio button selections'''
+    if self.ui.OverwriteRadioButton.checked:
+      # Overwrite in place, return the input directory as the output directory
+      selectedFile = self.ui.InputDICOMPathLineEdit.currentPath
+      outputDirectory = os.path.dirname(selectedFile)
+    else:
+      # Write modified files to a new directory, as specified
+      outputDirectory = self.ui.OutputDICOMPathLineEdit.currentPath # is '' if not selected
+    return outputDirectory
+    
+  def gatherTagNameDict(self):
+    '''Gather tag names and new values from GUI into a dictionary'''
+    tagNames = [getattr(self.ui,'TagName%i'%idx).text for idx in range(5)]
+    tagValues = [getattr(self.ui,'TagNameVal%i'%idx).text for idx in range(5)]
+    tagNameDict = {}
+    for tagName, tagValue in zip(tagNames, tagValues):
+      if tagName and tagValue: # only write if both are not ''
+        tagNameDict[tagName] = tagValue
+    return tagNameDict
+
+  def gatherTagNumDict(self):
+    '''Gather tag numbers and new values from GUI into a dictionary'''
+    '''int('str', 16) works for conversion from normal DICOM specifiers to hex based int'''
+    tagNums = [(getattr(self.ui,'TagNum_%i%i'%(r,0)).text, getattr(self.ui,'TagNum_%i%i'%(r,1)).text ) for r in range(5)]
+    tagValues = [getattr(self.ui, 'TagNumVal_%i'%(r)).text for r in range(5)]
+    tagNumDict = {}
+    for tagNumTup, tagValue in zip(tagNums, tagValues):
+      if tagNumTup[0] and tagNumTup[1] and tagValue:
+        # Interpret tag nums as hex-based integers
+        tagNumKey = (int(tagNumTup[0], 16), int(tagNumTup[1], 16))
+        tagNumDict[tagNumKey] = tagValue
+    return tagNumDict
+
+  def onOverwriteRadioButtonClick(self):
+    '''Select overwrite radio button and unselect output directory radio button'''
+    wasBlocked = self.ui.OverwriteRadioButton.blockSignals(True)
+    self.ui.OverwriteRadioButton.checked = True
+    self.ui.OverwriteRadioButton.blockSignals(wasBlocked)
+
+    wasBlocked =  self.ui.OutputDirRadioButton.blockSignals(True)
+    self.ui.OutputDirRadioButton.checked = False
+    self.ui.OutputDirRadioButton.blockSignals(wasBlocked)
+
+  def onOutputDirRadioButtonClick(self):
+    '''Select output directory radio button and unselect overwrite radio button'''
+    wasBlocked =  self.ui.OutputDirRadioButton.blockSignals(True)
+    self.ui.OutputDirRadioButton.checked = True
+    self.ui.OutputDirRadioButton.blockSignals(wasBlocked)
+    
+    wasBlocked = self.ui.OverwriteRadioButton.blockSignals(True)
+    self.ui.OverwriteRadioButton.checked = False
+    self.ui.OverwriteRadioButton.blockSignals(wasBlocked)
 
   def cleanup(self):
     """
@@ -312,6 +442,26 @@ class DICOM_ModifyLogic(ScriptedLoadableModuleLogic):
     if not parameterNode.GetParameter("Invert"):
       parameterNode.SetParameter("Invert", "false")
 
+  def isValidDICOMFile(self, filePath):
+    #TODO TODO write dicom validator here
+    return True
+
+  def modifyDicomFile(self, inputFilePath, outputFilePath, tagNameDict={}, tagNumDict={}):
+    '''Do the actual modification'''
+    try: 
+      ds = pydicom.dcmread(inputFilePath)
+      for tag, val in tagNumDict.items():
+        ds[tag].value = val
+      for tag, val in tagNameDict.items():
+        setattr(ds, tag, val)
+        # NOTE: ds[tag].value = val will work IFF ds already has tag, but throws error if it doesn't,
+        # while the alternative setattr method works either way. 
+      ds.save_as(outputFilePath)
+      return True, None
+    except Exception as err:
+      return False, err
+    
+    
   def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
     """
     Run the processing algorithm.
