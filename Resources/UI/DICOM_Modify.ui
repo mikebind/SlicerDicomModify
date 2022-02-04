@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DICOM_Modify</class>
+ <widget class="qMRMLWidget" name="DICOM_Modify">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>379</width>
+    <height>822</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton">
+     <property name="text">
+      <string>Choose DICOM File To Modify</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <property name="topMargin">
+         <number>10</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_35">
+          <property name="text">
+           <string>Input DICOM File</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ctkPathLineEdit" name="InputDICOMPathLineEdit"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_36">
+        <property name="text">
+         <string>Output:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="OverwriteRadioButton">
+        <property name="text">
+         <string>Overwrite input in place</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QRadioButton" name="OutputDirRadioButton">
+          <property name="text">
+           <string>Write output to: </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ctkPathLineEdit" name="OutputDICOMPathLineEdit"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="TagNumbersCB">
+     <property name="text">
+      <string>Modify By Tag Numbers</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="2" column="4">
+       <widget class="QLabel" name="label_15">
+        <property name="text">
+         <string>)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_11">
+        <property name="text">
+         <string>(</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="6">
+       <widget class="QLineEdit" name="TagNumVal_1"/>
+      </item>
+      <item row="3" column="4">
+       <widget class="QLabel" name="label_17">
+        <property name="text">
+         <string>)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="2">
+       <widget class="QLabel" name="label_29">
+        <property name="text">
+         <string>Tag Number to Modify</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="TagNum_10"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>(</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="QLineEdit" name="TagNum_31"/>
+      </item>
+      <item row="3" column="3">
+       <widget class="QLineEdit" name="TagNum_21"/>
+      </item>
+      <item row="2" column="3">
+       <widget class="QLineEdit" name="TagNum_11"/>
+      </item>
+      <item row="4" column="6">
+       <widget class="QLineEdit" name="TagNumVal_3"/>
+      </item>
+      <item row="0" column="6">
+       <widget class="QLabel" name="label_30">
+        <property name="text">
+         <string>New Tag Value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLineEdit" name="TagNum_30"/>
+      </item>
+      <item row="2" column="5">
+       <widget class="QLabel" name="label_13">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="6">
+       <widget class="QLineEdit" name="TagNumVal_0"/>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>,</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="TagNum_20"/>
+      </item>
+      <item row="4" column="4">
+       <widget class="QLabel" name="label_26">
+        <property name="text">
+         <string>)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLineEdit" name="TagNum_40"/>
+      </item>
+      <item row="1" column="5">
+       <widget class="QLabel" name="label_10">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_14">
+        <property name="text">
+         <string>(</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="6">
+       <widget class="QLineEdit" name="TagNumVal_2"/>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="label_12">
+        <property name="text">
+         <string>,</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="5">
+       <widget class="QLabel" name="label_18">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QLabel" name="label_24">
+        <property name="text">
+         <string>,</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_25">
+        <property name="text">
+         <string>(</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QLabel" name="label_16">
+        <property name="text">
+         <string>,</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="TagNum_00"/>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLineEdit" name="TagNum_01"/>
+      </item>
+      <item row="5" column="3">
+       <widget class="QLineEdit" name="TagNum_41"/>
+      </item>
+      <item row="5" column="6">
+       <widget class="QLineEdit" name="TagNumVal_4"/>
+      </item>
+      <item row="5" column="5">
+       <widget class="QLabel" name="label_27">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="4">
+       <widget class="QLabel" name="label_31">
+        <property name="text">
+         <string>)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="5">
+       <widget class="QLabel" name="label_32">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QLabel" name="label_33">
+        <property name="text">
+         <string>,</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_34">
+        <property name="text">
+         <string>(</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="TagNamesCB">
+     <property name="text">
+      <string>Modify By Tag Names</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="1" column="0">
+       <widget class="QLineEdit" name="TagName0"/>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLineEdit" name="TagNameVal0"/>
+      </item>
+      <item row="3" column="2">
+       <widget class="QLineEdit" name="TagNameVal2"/>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="label_22">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLineEdit" name="TagName2"/>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="label_21">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLineEdit" name="TagName3"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="label_19">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLineEdit" name="TagName1"/>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLineEdit" name="TagNameVal1"/>
+      </item>
+      <item row="4" column="2">
+       <widget class="QLineEdit" name="TagNameVal3"/>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_20">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>New Tag Value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLineEdit" name="TagName4"/>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLabel" name="label_23">
+        <property name="text">
+         <string>=</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QLineEdit" name="TagNameVal4"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_28">
+        <property name="text">
+         <string>Tag to Modify</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="ModifySinglePushButton">
+     <property name="text">
+      <string>Modify Single Input File</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="ModifyAllPushButton">
+     <property name="text">
+      <string>Modify All Files in Input Directory</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ctkCollapsibleButton</class>
+   <extends>QWidget</extends>
+   <header>ctkCollapsibleButton.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkPathLineEdit</class>
+   <extends>QWidget</extends>
+   <header>ctkPathLineEdit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLWidget</class>
+   <extends>QWidget</extends>
+   <header>qMRMLWidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>CollapsibleButton</tabstop>
+  <tabstop>OverwriteRadioButton</tabstop>
+  <tabstop>OutputDirRadioButton</tabstop>
+  <tabstop>TagNum_00</tabstop>
+  <tabstop>TagNum_01</tabstop>
+  <tabstop>TagNumVal_0</tabstop>
+  <tabstop>TagNum_10</tabstop>
+  <tabstop>TagNum_11</tabstop>
+  <tabstop>TagNumVal_1</tabstop>
+  <tabstop>TagNum_20</tabstop>
+  <tabstop>TagNum_21</tabstop>
+  <tabstop>TagNumVal_2</tabstop>
+  <tabstop>TagNum_30</tabstop>
+  <tabstop>TagNum_31</tabstop>
+  <tabstop>TagNumVal_3</tabstop>
+  <tabstop>TagNum_40</tabstop>
+  <tabstop>TagNum_41</tabstop>
+  <tabstop>TagNumVal_4</tabstop>
+  <tabstop>TagName0</tabstop>
+  <tabstop>TagNameVal0</tabstop>
+  <tabstop>TagName1</tabstop>
+  <tabstop>TagNameVal1</tabstop>
+  <tabstop>TagName2</tabstop>
+  <tabstop>TagNameVal2</tabstop>
+  <tabstop>TagName3</tabstop>
+  <tabstop>TagNameVal3</tabstop>
+  <tabstop>TagName4</tabstop>
+  <tabstop>TagNameVal4</tabstop>
+  <tabstop>ModifySinglePushButton</tabstop>
+  <tabstop>ModifyAllPushButton</tabstop>
+  <tabstop>TagNumbersCB</tabstop>
+  <tabstop>TagNamesCB</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

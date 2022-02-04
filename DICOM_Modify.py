@@ -24,6 +24,15 @@ class DICOM_Modify(ScriptedLoadableModule):
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
 This modules allows modification of tags in DICOM volumes, either into another output directory, or in place.
+This uses pydicom under the hood.  The existing DICOM file is loaded into a pydicom dataset, then tags are
+modified using setattr(myDataSet, Tag, Value). If a tag you are modifying requires a list, indicate that
+by enclosing the list elements, separated by commas, in square brackets.  For example "[1,2,3,4]". This
+will be converted to a python list before being passed to pydicom. Otherwise, pydicom handles any needed
+conversion between strings and numbers. 
+
+Please note, this module does absolutely no checking that you are providing valid values or that
+your modified DICOM files will be valid. The DICOM standard is extremely complex, and you should
+only be modifying files using this tool if you know what you are doing!
 """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
@@ -134,25 +143,21 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.EndCloseEvent, self.onSceneEndClose)
 
-    # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
-    # (in the selected parameter node).
-    self.ui.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    self.ui.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    self.ui.imageThresholdSliderWidget.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
-    self.ui.invertOutputCheckBox.connect("toggled(bool)", self.updateParameterNodeFromGUI)
-    self.ui.invertedOutputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     self.ui.ModifyAllPushButton.clicked.connect(self.onModifyAllPushButtonClick)
     self.ui.ModifySinglePushButton.clicked.connect(self.onModifySinglePushButtonClick)
     self.ui.OverwriteRadioButton.toggled.connect(self.onOverwriteRadioButtonClick)
     self.ui.OutputDirRadioButton.toggled.connect(self.onOutputDirRadioButtonClick)
     
-
-    # Buttons
-    self.ui.applyButton.connect('clicked(bool)', self.onApplyButton)
-
+    ''' I have removed any dependence on a parameter node for this module, because it is 
+    so simple and I don't see a need for making it reloadable, it's really just for 
+    active modifications.  However, if it is made more complicated in the future, it
+    might be worth restoring the parameter node, in which case some of the template code 
+    is helpful, so I'm just going to comment it out rather than delete it.  Look for
+    PARAMNODE comments if you're looking to restore'''
+    '''PARAMNODE
     # Make sure parameter node is initialized (needed for module reload)
-    self.initializeParameterNode()
+    self.initializeParameterNode()'''
 
   def onModifyAllPushButtonClick(self):
     '''Triggers modifying all DICOM files in the directory of the selected input DICOM file'''
@@ -173,7 +178,7 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Deterimine the output directory (i.e. same for overwrite, or specified other directory)
     outputDirectory = self.getOutputDirectory()
     if outputDirectory=='':
-      slicer.util.warningDisplay('The selected output directory is empty! Canceling...')
+      slicer.util.warningDisplay('No selected output directory! Canceling...')
       return
     # Assemble output paths
     outputFilePaths = [os.path.join(outputDirectory, fileName) for fileName in files_to_modify]
@@ -243,6 +248,7 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     '''int('str', 16) works for conversion from normal DICOM specifiers to hex based int'''
     tagNums = [(getattr(self.ui,'TagNum_%i%i'%(r,0)).text, getattr(self.ui,'TagNum_%i%i'%(r,1)).text ) for r in range(5)]
     tagValues = [getattr(self.ui, 'TagNumVal_%i'%(r)).text for r in range(5)]
+    tagValues = [self.logic.convertTagValueString(v) for v in tagValues] # 
     tagNumDict = {}
     for tagNumTup, tagValue in zip(tagNums, tagValues):
       if tagNumTup[0] and tagNumTup[1] and tagValue:
@@ -281,31 +287,39 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Called each time the user opens this module.
     """
+    '''PARAMNODE
     # Make sure parameter node exists and observed
     self.initializeParameterNode()
+    '''
 
   def exit(self):
     """
     Called each time the user opens a different module.
     """
+    '''PARAMNODE
     # Do not react to parameter node changes (GUI wlil be updated when the user enters into the module)
     self.removeObserver(self._parameterNode, vtk.vtkCommand.ModifiedEvent, self.updateGUIFromParameterNode)
+    '''
 
   def onSceneStartClose(self, caller, event):
     """
     Called just before the scene is closed.
     """
+    '''PARAMNODE
     # Parameter node will be reset, do not use it anymore
     self.setParameterNode(None)
+    '''
 
   def onSceneEndClose(self, caller, event):
     """
     Called just after the scene is closed.
     """
+    '''PARAMNODE
     # If this module is shown while the scene is closed then recreate a new parameter node immediately
     if self.parent.isEntered:
       self.initializeParameterNode()
-
+    '''
+  '''PARAMNODE
   def initializeParameterNode(self):
     """
     Ensure parameter node exists and observed.
@@ -391,27 +405,7 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
-  def onApplyButton(self):
-    """
-    Run processing when user clicks "Apply" button.
-    """
-    try:
-
-      # Compute output
-      self.logic.process(self.ui.inputSelector.currentNode(), self.ui.outputSelector.currentNode(),
-        self.ui.imageThresholdSliderWidget.value, self.ui.invertOutputCheckBox.checked)
-
-      # Compute inverted output (if needed)
-      if self.ui.invertedOutputSelector.currentNode():
-        # If additional output volume is selected then result with inverted threshold is written there
-        self.logic.process(self.ui.inputSelector.currentNode(), self.ui.invertedOutputSelector.currentNode(),
-          self.ui.imageThresholdSliderWidget.value, not self.ui.invertOutputCheckBox.checked, showResult=False)
-
-    except Exception as e:
-      slicer.util.errorDisplay("Failed to compute results: "+str(e))
-      import traceback
-      traceback.print_exc()
-
+  '''
 
 #
 # DICOM_ModifyLogic
@@ -433,6 +427,7 @@ class DICOM_ModifyLogic(ScriptedLoadableModuleLogic):
     """
     ScriptedLoadableModuleLogic.__init__(self)
 
+  '''PARAMNODE
   def setDefaultParameters(self, parameterNode):
     """
     Initialize parameter node with default settings.
@@ -441,6 +436,21 @@ class DICOM_ModifyLogic(ScriptedLoadableModuleLogic):
       parameterNode.SetParameter("Threshold", "100.0")
     if not parameterNode.GetParameter("Invert"):
       parameterNode.SetParameter("Invert", "false")
+  '''
+  def convertTagValueString(self, tagValueString):
+    """ Convert to list if in brackets, otherwise return unchanged
+    """
+    import re
+    patt = re.compile("^\w*\[(.*)]\w*")
+    m = patt.fullmatch(tagValueString)
+    if m:
+      # Split into a list of strings for multi-valued DICOM element
+      values = m[1].split(',') # split list elements by commas
+      tagValue = [v.strip() for v in values] # strip any extra whitespace around list elements
+    else:
+      # Not a multi-valued tag string, just return unmodified string (this is correct for numerical values as well)
+      tagValue = tagValueString
+    return tagValue
 
   def isValidDICOMFile(self, filePath):
     #TODO TODO write dicom validator here
@@ -462,37 +472,6 @@ class DICOM_ModifyLogic(ScriptedLoadableModuleLogic):
       return False, err
     
     
-  def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
-    """
-    Run the processing algorithm.
-    Can be used without GUI widget.
-    :param inputVolume: volume to be thresholded
-    :param outputVolume: thresholding result
-    :param imageThreshold: values above/below this threshold will be set to 0
-    :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-    :param showResult: show output volume in slice viewers
-    """
-
-    if not inputVolume or not outputVolume:
-      raise ValueError("Input or output volume is invalid")
-
-    import time
-    startTime = time.time()
-    logging.info('Processing started')
-
-    # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-    cliParams = {
-      'InputVolume': inputVolume.GetID(),
-      'OutputVolume': outputVolume.GetID(),
-      'ThresholdValue' : imageThreshold,
-      'ThresholdType' : 'Above' if invert else 'Below'
-      }
-    cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-    # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-    slicer.mrmlScene.RemoveNode(cliNode)
-
-    stopTime = time.time()
-    logging.info('Processing completed in {0:.2f} seconds'.format(stopTime-startTime))
 
 #
 # DICOM_ModifyTest
