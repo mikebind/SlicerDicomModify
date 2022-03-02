@@ -122,12 +122,16 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
 
-    # Force input selector to use the Open (rather than the "Save" dialog) and be restricted to files (not directories)
-    self.ui.InputDICOMPathLineEdit.filters = ctk.ctkPathLineEdit.Readable + ctk.ctkPathLineEdit.Files
-
-    # Force output directory selector to only allow directories as values (hide files, allow directories only)
-    self.ui.OutputDICOMPathLineEdit.filters = ctk.ctkPathLineEdit.Dirs
+    # Force input file selector to use the Open (rather than the "Save" dialog) and be restricted to files (not directories)
+    self.ui.InputDICOMFilePathLineEdit.filters = ctk.ctkPathLineEdit.Readable + ctk.ctkPathLineEdit.Files
     
+    # Force input directory selector to only allow directories as values
+    self.ui.InputDICOMFolderPathLineEdit.filters = ctk.ctkPathLineEdit.Dirs
+    
+    # Force output directory selector to only allow directories as values (hide files, allow directories only)
+    self.ui.OutputDICOMSinglePathLineEdit.filters = ctk.ctkPathLineEdit.Dirs
+    self.ui.OutputDICOMFolderPathLineEdit.filters = ctk.ctkPathLineEdit.Dirs    
+
     # Set scene in MRML widgets. Make sure that in Qt designer the top-level qMRMLWidget's
     # "mrmlSceneChanged(vtkMRMLScene*)" signal in is connected to each MRML widget's.
     # "setMRMLScene(vtkMRMLScene*)" slot.
@@ -160,28 +164,37 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.initializeParameterNode()'''
 
   def onModifyAllPushButtonClick(self):
-    '''Triggers modifying all DICOM files in the directory of the selected input DICOM file'''
+    ''' Triggers modifying all DICOM files in the indicated directory (and subdirectories if
+        checkbox is checked) 
+    '''
     logging.debug('Launching DICOM_Modify modify all...')
     # Get selected file path
-    selectedFile = self.ui.InputDICOMPathLineEdit.currentPath
-    logging.debug('Selected file: %s' % (selectedFile))
-    # Validate that it is a DICOM file
-    if not self.logic.isValidDICOMFile(selectedFile):
-      slicer.util.warningDisplay('The selected input file is not a valid DICOM file!  Canceling...')
-      logging.debug('Canceled modify all because selected file was not a valid DICOM file.')
-      return
-    # Gather all the files in that directory
-    basePath, fileName = os.path.split(selectedFile)
-    (_,_, files_to_modify) = next(os.walk(basePath))
-    filePathsToModify = [os.path.join(basePath, fileName) for fileName in files_to_modify]
+    selectedDirectory = self.ui.InputDICOMFolderPathLineEdit.currentPath
+    logging.debug('Selected folder: %s' % (selectedDirectory))
+    # Gather all file paths to modify
+    filePathsToModify = []
+    includeSubDirs = self.ui.includeSubDirsCheckBox.checked
+    for currentDir, curSubDirs, curFiles in os.walk(selectedDirectory):
+      for fileName in curFiles:
+        filePathsToModify.append(os.path.join(currentDir, fileName))
+      if not includeSubDirs:
+        # Don't continue the walk into subdirectories, stop here
+        break
     logging.debug('Gathered %i files to modify.' % (len(filePathsToModify)))
     # Deterimine the output directory (i.e. same for overwrite, or specified other directory)
-    outputDirectory = self.getOutputDirectory()
+    outputDirectory = self.getOutputDirectoryForModifyAll()
     if outputDirectory=='':
       slicer.util.warningDisplay('No selected output directory! Canceling...')
       return
     # Assemble output paths
-    outputFilePaths = [os.path.join(outputDirectory, fileName) for fileName in files_to_modify]
+    # I want the output paths to have the same relative structure as the input paths
+    outputFilePaths = []
+    for filePath in filePathsToModify: 
+      fileDir, fileName = os.path.split(filePath)
+      relativePath = os.path.relpath(fileDir, selectedDirectory)
+      outputFilePath = os.path.join(outputDirectory, relativePath, fileName)
+      outputFilePaths.append(outputFilePath) 
+
     # Gather Tags to modify
     tagNumDict = self.gatherTagNumDict()
     tagNameDict = self.gatherTagNameDict()
@@ -191,13 +204,14 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       successFlag, err = self.logic.modifyDicomFile(inputFilePath, outputFilePath, tagNameDict, tagNumDict)
       if not successFlag:
         logging.warning('DICOM file modification failed for %s'%inputFilePath)
-        logging.warning('Error message: %s' % (str(err)))
+        #logging.warning('Error message: %s' % (str(err)))
+
 
   def onModifySinglePushButtonClick(self):
     '''Triggers modification of the single selected DICOM file'''
     logging.debug('Launching DICOM_Modify single file...')
     # Get selected file path
-    selectedFile = self.ui.InputDICOMPathLineEdit.currentPath
+    selectedFile = self.ui.InputDICOMFilePathLineEdit.currentPath
     logging.debug('Selected file: %s' % (selectedFile))
     # Validate that it is a DICOM file
     if not self.logic.isValidDICOMFile(selectedFile):
@@ -222,15 +236,25 @@ class DICOM_ModifyWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       logging.warning('Error message: %s' % (str(err)))
       raise err # may as well raise it, this was the only file we were trying for
 
-  def getOutputDirectory(self):
+  def getOutputDirectoryForModifyAll(self):
     '''Determine output directory based on radio button selections'''
     if self.ui.OverwriteRadioButton.checked:
       # Overwrite in place, return the input directory as the output directory
-      selectedFile = self.ui.InputDICOMPathLineEdit.currentPath
+      selectedFile = self.ui.InputDICOMFolderPathLineEdit.currentPath
       outputDirectory = os.path.dirname(selectedFile)
     else:
       # Write modified files to a new directory, as specified
-      outputDirectory = self.ui.OutputDICOMPathLineEdit.currentPath # is '' if not selected
+      outputDirectory = self.ui.OutputDICOMFolderPathLineEdit.currentPath # is '' if not selected
+    return outputDirectory
+
+  def getOutputDirectoryForModifySingle(self):
+    if self.ui.OverwriteSingleRadioButton.checked:
+      # Overwrite in place, return the input directory as the output directory
+      selectedFile = self.ui.InputDICOMFilePathLineEdit.currentPath
+      outputDirectory = os.path.dirname(selectedFile)
+    else:
+      # Write modified files to a new directory, as specified
+      outputDirectory = self.ui.OutputDICOMSinglePathLineEdit.currentPath # is '' if not selected
     return outputDirectory
     
   def gatherTagNameDict(self):
@@ -453,7 +477,7 @@ class DICOM_ModifyLogic(ScriptedLoadableModuleLogic):
     return tagValue
 
   def isValidDICOMFile(self, filePath):
-    #TODO TODO write dicom validator here
+    #TODO TODO write a minimal check that the supplied file looks like a dicom file
     return True
 
   def modifyDicomFile(self, inputFilePath, outputFilePath, tagNameDict={}, tagNumDict={}):
@@ -466,10 +490,34 @@ class DICOM_ModifyLogic(ScriptedLoadableModuleLogic):
         setattr(ds, tag, val)
         # NOTE: ds[tag].value = val will work IFF ds already has tag, but throws error if it doesn't,
         # while the alternative setattr method works either way. 
+      # Ensure the folder to contain the output file exists (save_as will not create it!)
+      dirPath, fileName = os.path.split(outputFilePath)
+      os.makedirs(dirPath, exist_ok=True) # create folder and any needed parents, don't throw error if it already exists
+      # Save the output file
       ds.save_as(outputFilePath)
       return True, None
     except Exception as err:
       return False, err
+
+  def getListOfFiles(self, dirName, recursive=False):
+    ''' Get a list of all files in a directory. Include files in subdirectories
+    if recursive flag is set to True (default is False)
+    '''
+    # create a list of file and sub directories 
+    # names in the given directory 
+    listOfFile = os.listdir(dirName)
+    allFiles = list()
+    # Iterate over all the entries
+    for entry in listOfFile:
+        # Create full path
+        fullPath = os.path.join(dirName, entry)
+        # If entry is a directory then get the list of files in this directory 
+        if os.path.isdir(fullPath) and recursive:
+            allFiles = allFiles + self.getListOfFiles(fullPath)
+        else:
+            allFiles.append(fullPath)
+                
+    return allFiles        
     
     
 

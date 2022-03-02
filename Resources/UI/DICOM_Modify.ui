@@ -14,25 +14,32 @@
    <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton">
      <property name="text">
-      <string>Choose DICOM File To Modify</string>
+      <string>Choose DICOM Folder To Modify</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
         <property name="topMargin">
          <number>10</number>
         </property>
         <item>
-         <widget class="QLabel" name="label_35">
+         <widget class="QLabel" name="label_37">
           <property name="text">
-           <string>Input DICOM File</string>
+           <string>Input directory</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="ctkPathLineEdit" name="InputDICOMPathLineEdit"/>
+         <widget class="ctkPathLineEdit" name="InputDICOMFolderPathLineEdit"/>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="includeSubDirsCheckBox">
+        <property name="text">
+         <string>Include subdirectories</string>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="label_36">
@@ -61,7 +68,7 @@
          </widget>
         </item>
         <item>
-         <widget class="ctkPathLineEdit" name="OutputDICOMPathLineEdit"/>
+         <widget class="ctkPathLineEdit" name="OutputDICOMFolderPathLineEdit"/>
         </item>
        </layout>
       </item>
@@ -365,17 +372,74 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="ModifySinglePushButton">
+    <widget class="QPushButton" name="ModifyAllPushButton">
      <property name="text">
-      <string>Modify Single Input File</string>
+      <string>Modify All </string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="ModifyAllPushButton">
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_2">
      <property name="text">
-      <string>Modify All Files in Input Directory</string>
+      <string>Modify Single DICOM File</string>
      </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <property name="topMargin">
+         <number>10</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_35">
+          <property name="text">
+           <string>Input single DICOM File</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ctkPathLineEdit" name="InputDICOMFilePathLineEdit"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_38">
+        <property name="text">
+         <string>Output:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="OverwriteSingleRadioButton">
+        <property name="text">
+         <string>Overwrite input in place</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QRadioButton" name="OutputDirRadioButton_2">
+          <property name="text">
+           <string>Write output to: </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ctkPathLineEdit" name="OutputDICOMSinglePathLineEdit"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="ModifySinglePushButton">
+        <property name="text">
+         <string>Modify Single Input File</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>
@@ -441,7 +505,6 @@
   <tabstop>TagNameVal3</tabstop>
   <tabstop>TagName4</tabstop>
   <tabstop>TagNameVal4</tabstop>
-  <tabstop>ModifySinglePushButton</tabstop>
   <tabstop>ModifyAllPushButton</tabstop>
   <tabstop>TagNumbersCB</tabstop>
   <tabstop>TagNamesCB</tabstop>
